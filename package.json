@@ -1,17 +1,20 @@
 {
   "name": "twitterweek",
   "version": "1.0.0",
-  "description": "",
+  "description": "get your twitter feed as a daily mail",
   "main": "twitterweek.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "author": "Maximilian Hoffmann",
+  "engines": {
+    "node": "10.x"
   },
-  "author": "",
-  "license": "ISC",
+  "license": "MIT",
+  "scripts": {
+    "start": "echo 'send a request to the URL to send the mail'"
+  },
   "dependencies": {
-    "fs-extra": "^4.0.0",
-    "lodash": "^4.17.4",
-    "nodemailer": "^4.0.1",
-    "request": "^2.81.0"
+    "fs-extra": "^9.0.1",
+    "lodash": "^4.17.20",
+    "request": "^2.88.2",
+    "nodemailer": "^6.4.10"
   }
 }

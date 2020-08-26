@@ -1,10 +1,23 @@
 "use strict";
 const _ = require("lodash");
 const fs = require("fs-extra");
-const nodemailer = require("nodemailer");
 const request = require("request");
+const nodemailer = require("nodemailer");
 
-const { TWITTER, FROM, TO } = require("./config.json");
+const {
+  URL_TIMELINE,
+  CONSUMER_KEY,
+  CONSUMER_SECRET,
+  ACCESS_TOKEN,
+  ACCESS_TOKEN_SECRET,
+  SMTP_SERVER,
+  SMTP_PORT,
+  SMTP_USERNAME,
+  SMTP_PASSWORD,
+  FROM_ADDRESS,
+  TO_ADDRESS,
+} = process.env;
+
 const last = require("./last.json");
 
 const tweetWindow = {
@@ -12,41 +25,82 @@ const tweetWindow = {
   tweet_mode: "extended",
 };
 if (last.id) {
+  console.log("last id: ", last.id);
   tweetWindow.since_id = last.id;
 }
+
 const REGEX_YOUTUBE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/;
 
 request.get(
   {
-    url: TWITTER.URL_TIMELINE,
+    url: URL_TIMELINE,
     oauth: {
-      consumer_key: TWITTER.CONSUMER_KEY,
-      consumer_secret: TWITTER.CONSUMER_SECRET,
-      token: TWITTER.ACCESS_TOKEN,
-      token_secret: TWITTER.ACCESS_TOKEN_SECRET,
+      consumer_key: CONSUMER_KEY,
+      consumer_secret: CONSUMER_SECRET,
+      token: ACCESS_TOKEN,
+      token_secret: ACCESS_TOKEN_SECRET,
     },
     qs: tweetWindow,
     json: true,
   },
   function (error, response, body) {
-    if (error) return console.error(error);
+    if (error) {
+      return console.error(error);
+    }
     handleResponse(body);
   }
 );
 
-function handleResponse(json) {
-  const html =
-    json.length > 0
-      ? jsonTweetsToHTML(json)
-      : "There were no new tweets in your timeline since the last email.";
+function handleResponse(response) {
+  if (response.length < 1) {
+    sendHTMLperMail(
+      "There were no new tweets in your timeline since the last email."
+    );
+    return;
+  }
+
+  const html = jsonTweetsToHTML(response);
 
   sendHTMLperMail(html);
-  if (json.length > 0) {
-    console.log("write json");
-    fs.writeJsonSync("/home/maxhoff/twitterweek/last.json", {
-      id: json[0].id_str,
-    });
-  }
+
+  console.log("write last.json: ", response[0].id_str);
+  //fs.writeJsonSync("./last.json", {
+  //  id: response[0].id_str
+  //});
+}
+
+const subject = `Today on Twitter ${new Date().toLocaleDateString("de-de", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+})}`;
+
+function sendHTMLperMail(html) {
+  const transporter = nodemailer.createTransport({
+    host: SMTP_SERVER,
+    port: SMTP_PORT,
+    secure: false, // secure:true for port 465, secure:false for port 587
+    auth: {
+      user: SMTP_USERNAME,
+      pass: SMTP_PASSWORD,
+    },
+  });
+
+  const mailOptions = {
+    from: `"Today on Twitter " <${FROM_ADDRESS}>`,
+    to: TO_ADDRESS,
+    subject: `Today on Twitter ${new Date().toLocaleDateString("de-de", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    })}`,
+    html,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) return console.error(error);
+    console.log("Message %s sent: %s", info.messageId, info.response);
+  });
 }
 
 function jsonTweetsToHTML(jsonTweets) {
@@ -156,32 +210,4 @@ function prepareText(tweet) {
     );
   }
   return [fullText, embeds];
-}
-
-function sendHTMLperMail(html) {
-  const transporter = nodemailer.createTransport({
-    host: FROM.HOST,
-    port: FROM.PORT,
-    secure: false, // secure:true for port 465, secure:false for port 587
-    auth: {
-      user: FROM.USER,
-      pass: FROM.PW,
-    },
-  });
-
-  const mailOptions = {
-    from: `"Today on Twitter " <${FROM.MAIL}>`,
-    to: TO.MAIL,
-    subject: `Today on Twitter ${new Date().toLocaleDateString("de-de", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })}`,
-    html,
-  };
-
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) return console.error(error);
-    console.log("Message %s sent: %s", info.messageId, info.response);
-  });
 }
