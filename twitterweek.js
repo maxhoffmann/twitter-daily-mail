@@ -2,7 +2,9 @@
 const _ = require("lodash");
 const fs = require("fs-extra");
 const request = require("request");
-const nodemailer = require("nodemailer");
+const sendgridMail = require("@sendgrid/mail");
+
+sendgridMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const {
   URL_TIMELINE,
@@ -10,10 +12,6 @@ const {
   CONSUMER_SECRET,
   ACCESS_TOKEN,
   ACCESS_TOKEN_SECRET,
-  SMTP_SERVER,
-  SMTP_PORT,
-  SMTP_USERNAME,
-  SMTP_PASSWORD,
   FROM_ADDRESS,
   TO_ADDRESS,
 } = process.env;
@@ -67,9 +65,9 @@ function handleResponse(response) {
   sendHTMLperMail(html);
 
   console.log("write last.json: ", response[0].id_str);
-  fs.writeJsonSync("./last.json", {
-    id: response[0].id_str,
-  });
+  //fs.writeJsonSync("./last.json", {
+  //  id: response[0].id_str,
+  //});
 }
 
 const subject = `Today on Twitter ${new Date().toLocaleDateString("de-de", {
@@ -79,19 +77,9 @@ const subject = `Today on Twitter ${new Date().toLocaleDateString("de-de", {
 })}`;
 
 function sendHTMLperMail(html) {
-  const transporter = nodemailer.createTransport({
-    host: SMTP_SERVER,
-    port: SMTP_PORT,
-    secure: true, // secure:true for port 465, secure:false for port 587
-    auth: {
-      user: SMTP_USERNAME,
-      pass: SMTP_PASSWORD,
-    },
-  });
-
-  const mailOptions = {
-    from: `"Today on Twitter " <${FROM_ADDRESS}>`,
+  const msg = {
     to: TO_ADDRESS,
+    from: `"Today on Twitter " <${FROM_ADDRESS}>`,
     subject: `Today on Twitter ${new Date().toLocaleDateString("de-de", {
       day: "2-digit",
       month: "2-digit",
@@ -99,11 +87,9 @@ function sendHTMLperMail(html) {
     })}`,
     html,
   };
+  sendgridMail.send(msg);
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) return console.error(error);
-    console.log("Message %s sent: %s", info.messageId, info.response);
-  });
+  console.log("Message sent");
 }
 
 function jsonTweetsToHTML(jsonTweets) {
@@ -144,7 +130,9 @@ function renderTweet(tweet, renderBorder = true) {
                 src="${tweet.user.profile_image_url_https}"
                 style="clear: left; float: left; margin-right: 10px;">
             <h4 style="margin: 0;">
-                ${tweet.user.name}<br>
+                <a href="https://twitter.com/${tweet.user.screen_name}/status/${
+    tweet.id
+  }">${tweet.user.name}</a><br>
                 <small style="color: grey">@${tweet.user.screen_name}</small>
             </h4>
             <div style="clear: left; margin-top: 20px;">
