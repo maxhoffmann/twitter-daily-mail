@@ -65,9 +65,9 @@ function handleResponse(response) {
   sendHTMLperMail(html);
 
   console.log("write last.json: ", response[0].id_str);
-  //fs.writeJsonSync("./last.json", {
-  //  id: response[0].id_str,
-  //});
+  fs.writeJsonSync("./last.json", {
+    id: response[0].id_str,
+  });
 }
 
 const subject = `Today on Twitter ${new Date().toLocaleDateString("de-de", {
@@ -118,7 +118,7 @@ function jsonTweetsToHTML(jsonTweets) {
 }
 
 function renderTweet(tweet, renderBorder = true) {
-  const [text, embeds] = prepareText(tweet);
+  const [text, embeds] = formatText(tweet);
   return `
         <div style="max-width: 100%; word-wrap: break-word; hyphens: auto;
              ${
@@ -130,9 +130,9 @@ function renderTweet(tweet, renderBorder = true) {
                 src="${tweet.user.profile_image_url_https}"
                 style="clear: left; float: left; margin-right: 10px;">
             <h4 style="margin: 0;">
-                <a href="https://twitter.com/${tweet.user.screen_name}/status/${
-    tweet.id
-  }">${tweet.user.name}</a><br>
+                <a style="color: inherit; text-decoration: none;" href="https://twitter.com/${
+                  tweet.user.screen_name
+                }/status/${tweet.id_str}">${tweet.user.name}</a><br>
                 <small style="color: grey">@${tweet.user.screen_name}</small>
             </h4>
             <div style="clear: left; margin-top: 20px;">
@@ -168,7 +168,7 @@ function renderTweet(tweet, renderBorder = true) {
         </div>`;
 }
 
-function prepareText(tweet) {
+function formatText(tweet) {
   const embeds = [];
   let fullText = tweet.full_text || tweet.text || "";
 
@@ -203,6 +203,8 @@ function prepareText(tweet) {
       (media) => (fullText = fullText.replace(media.url, ""))
     );
   }
+
+  fullText = fullText.replace(/\n/g, "<br>");
 
   return [fullText, embeds];
 }
