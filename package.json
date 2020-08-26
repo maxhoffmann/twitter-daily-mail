@@ -1,0 +1,17 @@
+{
+  "name": "twitterweek",
+  "version": "1.0.0",
+  "description": "",
+  "main": "twitterweek.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^4.0.0",
+    "lodash": "^4.17.4",
+    "nodemailer": "^4.0.1",
+    "request": "^2.81.0"
+  }
+}
