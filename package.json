@@ -2,19 +2,20 @@
   "name": "twitterweek",
   "version": "1.0.0",
   "description": "get your twitter feed as a daily mail",
-  "main": "twitterweek.js",
+  "main": "server.js",
   "author": "Maximilian Hoffmann",
   "engines": {
     "node": "10.x"
   },
   "license": "MIT",
   "scripts": {
-    "start": "echo 'send a request to the URL to send the mail'"
+    "start": "node server.js"
   },
   "dependencies": {
     "fs-extra": "^9.0.1",
     "lodash": "^4.17.20",
     "request": "^2.88.2",
-    "nodemailer": "^6.4.10"
+    "nodemailer": "^6.4.10",
+    "express": "^4.17.1"
   }
 }

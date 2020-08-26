@@ -25,31 +25,34 @@ const tweetWindow = {
   tweet_mode: "extended",
 };
 if (last.id) {
-  console.log("last id: ", last.id);
   tweetWindow.since_id = last.id;
 }
 
 const REGEX_YOUTUBE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/;
 
-request.get(
-  {
-    url: URL_TIMELINE,
-    oauth: {
-      consumer_key: CONSUMER_KEY,
-      consumer_secret: CONSUMER_SECRET,
-      token: ACCESS_TOKEN,
-      token_secret: ACCESS_TOKEN_SECRET,
+module.exports = function sendMail(callback) {
+  request.get(
+    {
+      url: URL_TIMELINE,
+      oauth: {
+        consumer_key: CONSUMER_KEY,
+        consumer_secret: CONSUMER_SECRET,
+        token: ACCESS_TOKEN,
+        token_secret: ACCESS_TOKEN_SECRET,
+      },
+      qs: tweetWindow,
+      json: true,
     },
-    qs: tweetWindow,
-    json: true,
-  },
-  function (error, response, body) {
-    if (error) {
-      return console.error(error);
+    function (error, response, body) {
+      if (error) {
+        console.error(error);
+        return callback(error);
+      }
+      handleResponse(body);
+      callback();
     }
-    handleResponse(body);
-  }
-);
+  );
+};
 
 function handleResponse(response) {
   if (response.length < 1) {
@@ -64,9 +67,9 @@ function handleResponse(response) {
   sendHTMLperMail(html);
 
   console.log("write last.json: ", response[0].id_str);
-  //fs.writeJsonSync("./last.json", {
-  //  id: response[0].id_str
-  //});
+  fs.writeJsonSync("./last.json", {
+    id: response[0].id_str,
+  });
 }
 
 const subject = `Today on Twitter ${new Date().toLocaleDateString("de-de", {
@@ -79,7 +82,7 @@ function sendHTMLperMail(html) {
   const transporter = nodemailer.createTransport({
     host: SMTP_SERVER,
     port: SMTP_PORT,
-    secure: false, // secure:true for port 465, secure:false for port 587
+    secure: true, // secure:true for port 465, secure:false for port 587
     auth: {
       user: SMTP_USERNAME,
       pass: SMTP_PASSWORD,
@@ -180,6 +183,7 @@ function renderTweet(tweet, renderBorder = true) {
 function prepareText(tweet) {
   const embeds = [];
   let fullText = tweet.full_text || tweet.text || "";
+
   if (tweet.entities.user_mentions) {
     tweet.entities.user_mentions.forEach(
       (mention) =>
@@ -189,6 +193,7 @@ function prepareText(tweet) {
         ))
     );
   }
+
   if (tweet.entities.urls) {
     tweet.entities.urls.forEach((url) => {
       if (REGEX_YOUTUBE.test(url.expanded_url)) {
@@ -204,10 +209,12 @@ function prepareText(tweet) {
       );
     });
   }
+
   if (tweet.entities.media) {
     tweet.entities.media.forEach(
       (media) => (fullText = fullText.replace(media.url, ""))
     );
   }
+
   return [fullText, embeds];
 }
