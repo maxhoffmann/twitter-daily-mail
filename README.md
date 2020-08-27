@@ -3,7 +3,7 @@
 Get your twitter feed as a daily email. There is no programming knowledge required to set this up.
 
 One has to create free accounts with the services mentioned below though and copy paste the correct
-passwords and tokens from the services into glitch’s `.env` file.
+passwords and tokens from the services into vercel’s web interface for environment variables.
 
 ## Required Services (all free)
 
