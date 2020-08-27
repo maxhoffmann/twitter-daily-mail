@@ -7,10 +7,11 @@ passwords and tokens from the services into glitch’s `.env` file.
 
 ## Required Services (all free)
 
-- [Twitter Developer Account](https://developer.twitter.com) with an app with timeline access
-- [vercel](https://vercel.com) account
-- [sendgrid](https://sendgrid.com) account
-- [cron-job.org](https://cron-job.org) account
+- [Twitter Developer Account](https://developer.twitter.com) for timeline access
+- [redislabs.com](https://redislabs.com/) for saving the last seen tweet
+- [sendgrid](https://sendgrid.com) for sending the mail
+- [cron-job.org](https://cron-job.org) for setting up the repeated delivery
+- [vercel](https://vercel.com) for hosting the node server which connects all the services
 
 ## License
 (c) 2020 MIT Maximilian Hoffmann
