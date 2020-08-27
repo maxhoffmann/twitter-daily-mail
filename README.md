@@ -7,7 +7,7 @@ passwords and tokens from the services into glitch’s `.env` file.
 
 ## Required Services (all free)
 
-- [Twitter Developer Account](https://developer.twitter.com) for timeline access
+- [twitter developer account](https://developer.twitter.com) for timeline access
 - [redislabs.com](https://redislabs.com/) for saving the last seen tweet
 - [sendgrid](https://sendgrid.com) for sending the mail
 - [cron-job.org](https://cron-job.org) for setting up the repeated delivery
