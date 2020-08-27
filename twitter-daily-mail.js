@@ -20,9 +20,7 @@ const db = redis.createClient({
   url: REDIS_URL,
   password: REDIS_PW,
 });
-db.on("error", function (error) {
-  console.error(error);
-});
+db.on("error", console.error);
 
 sendgridMail.setApiKey(process.env.SENDGRID_API_KEY);
 

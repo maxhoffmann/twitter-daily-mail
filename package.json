@@ -1,16 +1,13 @@
 {
-  "name": "twitterweek",
+  "name": "twitter-daily-mail",
   "version": "1.0.0",
   "description": "get your twitter feed as a daily mail",
-  "main": "twitterweek.js",
+  "main": "twitter-daily-mail.js",
   "author": "Maximilian Hoffmann",
   "engines": {
-    "node": "10.x"
+    "node": "12.x"
   },
   "license": "MIT",
-  "scripts": {
-    "start": "node server.js"
-  },
   "dependencies": {
     "@sendgrid/mail": "^7.2.4",
     "express": "^4.17.1",
