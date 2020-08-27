@@ -1,10 +1,8 @@
 "use strict";
 const _ = require("lodash");
-const fs = require("fs-extra");
 const request = require("request");
 const sendgridMail = require("@sendgrid/mail");
-
-sendgridMail.setApiKey(process.env.SENDGRID_API_KEY);
+const redis = require("redis");
 
 const {
   URL_TIMELINE,
@@ -14,67 +12,89 @@ const {
   ACCESS_TOKEN_SECRET,
   FROM_ADDRESS,
   TO_ADDRESS,
+  REDIS_URL,
+  REDIS_PW,
 } = process.env;
 
-const last = require("./last.json");
+const db = redis.createClient({
+  url: REDIS_URL,
+  password: REDIS_PW,
+});
+db.on("error", function (error) {
+  console.error(error);
+});
 
-const tweetWindow = {
-  count: 200,
-  tweet_mode: "extended",
-};
-if (last.id) {
-  tweetWindow.since_id = last.id;
-}
+sendgridMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const REGEX_YOUTUBE = /^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/;
 
-module.exports = function sendMail(callback) {
-  request.get(
-    {
-      url: URL_TIMELINE,
-      oauth: {
-        consumer_key: CONSUMER_KEY,
-        consumer_secret: CONSUMER_SECRET,
-        token: ACCESS_TOKEN,
-        token_secret: ACCESS_TOKEN_SECRET,
-      },
-      qs: tweetWindow,
-      json: true,
-    },
-    function (error, response, body) {
-      if (error) {
-        console.error(error);
-        return callback(error);
-      }
-      handleResponse(body);
-      callback();
-    }
-  );
+module.exports = function sendMail(req, res) {
+  return retrieve("last")
+    .then(
+      (lastId) =>
+        new Promise((resolve, reject) => {
+          request.get(
+            {
+              url: URL_TIMELINE,
+              oauth: {
+                consumer_key: CONSUMER_KEY,
+                consumer_secret: CONSUMER_SECRET,
+                token: ACCESS_TOKEN,
+                token_secret: ACCESS_TOKEN_SECRET,
+              },
+              qs: {
+                count: 200,
+                tweet_mode: "extended",
+                since_id: (console.log(lastId), lastId) || "",
+              },
+              json: true,
+            },
+            function (error, response, body) {
+              if (error) {
+                console.error(error);
+                reject(error);
+              }
+              resolve(body);
+            }
+          );
+        })
+    )
+    .then(handleResponse)
+    .then(() => {
+      res.send("email sent!");
+    })
+    .catch((error) => {
+      res.status(500);
+      res.send(`error: ${error.message}`);
+    });
 };
 
 function handleResponse(response) {
+  console.log(response);
   if (response.length < 1) {
-    sendHTMLperMail(
+    return sendHTMLperMail(
       "There were no new tweets in your timeline since the last email."
     );
-    return;
   }
 
   const html = jsonTweetsToHTML(response);
 
-  sendHTMLperMail(html);
-
-  console.log("write last.json: ", response[0].id_str);
-  fs.writeJsonSync("./last.json", {
-    id: response[0].id_str,
-  });
+  return sendHTMLperMail(html)
+    .then(
+      () => {
+        console.log("Message sent");
+        return save("last", response[0].id_str);
+      },
+      (error) => {
+        if (error.response) {
+          console.error(error.response.body);
+        }
+      }
+    )
+    .then(() => {
+      console.log("wrote last id");
+    });
 }
-
-const subject = `Today on Twitter ${new Date().toLocaleDateString("de-de", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-})}`;
 
 function sendHTMLperMail(html) {
   const msg = {
@@ -87,9 +107,7 @@ function sendHTMLperMail(html) {
     })}`,
     html,
   };
-  sendgridMail.send(msg);
-
-  console.log("Message sent");
+  return sendgridMail.send(msg);
 }
 
 function jsonTweetsToHTML(jsonTweets) {
@@ -207,4 +225,26 @@ function formatText(tweet) {
   fullText = fullText.replace(/\n/g, "<br>");
 
   return [fullText, embeds];
+}
+
+function save(key, value) {
+  return new Promise((resolve, reject) => {
+    db.set(key, value, (err) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+}
+
+function retrieve(key) {
+  return new Promise((resolve, reject) => {
+    db.get(key, (err, value) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(value);
+    });
+  });
 }
